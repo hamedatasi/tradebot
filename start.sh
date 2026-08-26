@@ -69,5 +69,4 @@ echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-cd trade_bot/web
-python server.py
+python -m trade_bot.web.server
