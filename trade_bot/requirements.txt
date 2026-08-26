@@ -1,0 +1,14 @@
+# Core dependencies
+requests>=2.28.0
+numpy>=1.24.0
+
+# Optional dependencies for extended functionality
+# openai>=1.0.0  # For AI agent
+# pandas>=2.0.0  # For data analysis
+# matplotlib>=3.7.0  # For charting backtest results
+
+# Note: All APIs used have free tiers:
+# - GNews API (free: 100 requests/day)
+# - NewsAPI (free: 100 requests/day)  
+# - CryptoPanic (free tier available)
+# - Binance Testnet (free)
