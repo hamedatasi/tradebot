@@ -8,6 +8,10 @@ project_root = current_dir.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(current_dir.parent))  # Add trade_bot to path
 
+# Define absolute paths for web files
+WEB_DIR = current_dir
+INDEX_HTML_PATH = WEB_DIR / "index.html"
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -60,17 +64,19 @@ def get_bot():
 
 @app.get("/")
 async def read_root():
-    return FileResponse('trade_bot/web/index.html')
+    if not INDEX_HTML_PATH.exists():
+        return HTMLResponse(content="<h1>Error: index.html not found</h1>", status_code=500)
+    return FileResponse(str(INDEX_HTML_PATH))
 
 @app.get("/api/status")
 async def get_status():
     bot = get_bot()
     return {
         "status": "running",
-        "paper_trading": bot.config.PAPER_TRADING,
-        "active_symbols": list(bot.positions.keys()),
+        "paper_trading": bot.config.paper_trading,
+        "active_symbols": [t['symbol'] for t in bot.tracked_symbols],
         "trading_active": trading_active,
-        "balance": bot.config.INITIAL_CAPITAL
+        "balance": bot.config.backtest.initial_capital
     }
 
 @app.post("/api/symbol/add")
