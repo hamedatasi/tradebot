@@ -73,14 +73,50 @@ A comprehensive cryptocurrency trading bot with support for multiple exchanges (
 
 ## Installation
 
+### Option 1: Quick Start with Web UI (Recommended)
+
+**Windows:**
+```cmd
+start.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+This will automatically:
+- Create a virtual environment
+- Install all dependencies
+- Create a `.env` configuration file
+- Start the web interface at http://localhost:8000
+
+### Option 2: Manual Installation
+
 ```bash
 # Clone or copy the trade_bot directory to your project
 
 # Install dependencies
-pip install requests numpy
+pip install -r trade_bot/requirements.txt
 
 # Optional: For full functionality
 pip install openai pandas matplotlib
+```
+
+### Running the Web Interface Manually
+
+```bash
+cd trade_bot/web
+python server.py
+```
+
+Then open your browser to **http://localhost:8000**
+
+### Running the Bot Directly (CLI)
+
+```bash
+python -m trade_bot.core.bot
 ```
 
 ## Configuration

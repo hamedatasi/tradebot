@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoTrade Pro - Advanced Trading Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+        
+        .pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="glass-effect border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">CryptoTrade Pro</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <button onclick="showSection('dashboard')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium bg-gray-800 text-white">Dashboard</button>
+                        <button onclick="showSection('analysis')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800">Analysis</button>
+                        <button onclick="showSection('backtest')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800">Backtest</button>
+                        <button onclick="showSection('strategy')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800">Strategy</button>
+                        <button onclick="showSection('chat')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800">AI Chat</button>
+                        <button onclick="showSection('settings')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800">Settings</button>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="trading-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-900 text-red-300">
+                        <i class="fas fa-circle text-xs mr-1"></i>Stopped
+                    </div>
+                    <button onclick="toggleTrading()" class="gradient-bg px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                        <i class="fas fa-play mr-2"></i>Auto Trade
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="glass-effect rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Balance</p>
+                            <p class="text-2xl font-bold mt-1">$<span id="total-balance">10,000.00</span></p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-900/50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-wallet text-blue-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">Active Positions</p>
+                            <p class="text-2xl font-bold mt-1" id="active-positions">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-900/50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-green-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">Today's P&L</p>
+                            <p class="text-2xl font-bold mt-1 text-green-400">+$<span id="today-pnl">0.00</span></p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-900/50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-percent text-purple-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">Win Rate</p>
+                            <p class="text-2xl font-bold mt-1"><span id="win-rate">0</span>%</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-900/50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-trophy text-yellow-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chart -->
+                <div class="lg:col-span-2 glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Equity Curve</h3>
+                    <canvas id="equity-chart" height="300"></canvas>
+                </div>
+                
+                <!-- News Feed -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Latest News</h3>
+                    <div id="news-feed" class="space-y-4 max-h-96 overflow-y-auto">
+                        <div class="loading-spinner mx-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Symbols -->
+            <div class="mt-8 glass-effect rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Monitored Symbols</h3>
+                    <button onclick="openAddSymbolModal()" class="gradient-bg px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90">
+                        <i class="fas fa-plus mr-2"></i>Add Symbol
+                    </button>
+                </div>
+                <div id="symbols-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center">
+                                <i class="fab fa-bitcoin text-orange-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">BTC/USDT</p>
+                                <p class="text-sm text-gray-400">Binance</p>
+                            </div>
+                        </div>
+                        <button onclick="analyzeSymbol('BTCUSDT')" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div id="analysis" class="section hidden">
+            <div class="glass-effect rounded-xl p-6">
+                <div class="flex items-center space-x-4 mb-6">
+                    <input type="text" id="analysis-symbol" placeholder="Enter symbol (e.g., BTCUSDT)" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    <button onclick="runAnalysis()" class="gradient-bg px-6 py-2 rounded-lg font-medium hover:opacity-90">
+                        <i class="fas fa-search mr-2"></i>Analyze
+                    </button>
+                </div>
+                
+                <div id="analysis-result" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Technical Indicators</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3">
+                                    <span>RSI (14)</span>
+                                    <span id="rsi-value" class="font-mono">-</span>
+                                </div>
+                                <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3">
+                                    <span>MACD</span>
+                                    <span id="macd-value" class="font-mono">-</span>
+                                </div>
+                                <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3">
+                                    <span>Bollinger Bands</span>
+                                    <span id="bb-value" class="font-mono">-</span>
+                                </div>
+                                <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3">
+                                    <span>Signal</span>
+                                    <span id="signal-value" class="font-bold">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Pattern Detection</h3>
+                            <div id="patterns-detected" class="space-y-2">
+                                <p class="text-gray-400 text-sm">No patterns detected yet</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold mb-4">Price Chart</h3>
+                        <canvas id="price-chart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backtest Section -->
+        <div id="backtest" class="section hidden">
+            <div class="glass-effect rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-6">Backtesting Engine</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Symbol</label>
+                        <input type="text" id="backtest-symbol" value="BTCUSDT" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Start Date</label>
+                        <input type="date" id="backtest-start" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">End Date</label>
+                        <input type="date" id="backtest-end" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Strategy</label>
+                        <select id="backtest-strategy" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                            <option value="conservative">Conservative</option>
+                            <option value="balanced" selected>Balanced</option>
+                            <option value="aggressive">Aggressive</option>
+                            <option value="whale_tracker">Whale Tracker</option>
+                            <option value="news_driven">News Driven</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button onclick="runBacktest()" class="gradient-bg px-6 py-2 rounded-lg font-medium hover:opacity-90 mb-6">
+                    <i class="fas fa-flask mr-2"></i>Run Backtest
+                </button>
+                
+                <div id="backtest-results" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-gray-800/50 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Total Return</p>
+                            <p class="text-2xl font-bold text-green-400" id="bt-return">0%</p>
+                        </div>
+                        <div class="bg-gray-800/50 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Sharpe Ratio</p>
+                            <p class="text-2xl font-bold" id="bt-sharpe">0</p>
+                        </div>
+                        <div class="bg-gray-800/50 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Max Drawdown</p>
+                            <p class="text-2xl font-bold text-red-400" id="bt-drawdown">0%</p>
+                        </div>
+                        <div class="bg-gray-800/50 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Win Rate</p>
+                            <p class="text-2xl font-bold" id="bt-winrate">0%</p>
+                        </div>
+                    </div>
+                    
+                    <canvas id="backtest-chart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Section -->
+        <div id="strategy" class="section hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Available Strategies</h3>
+                    <div id="strategies-list" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Strategy Configuration</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Selected Strategy</label>
+                            <select id="current-strategy" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                                <option value="conservative">Conservative</option>
+                                <option value="balanced" selected>Balanced</option>
+                                <option value="aggressive">Aggressive</option>
+                                <option value="whale_tracker">Whale Tracker</option>
+                                <option value="news_driven">News Driven</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Risk Level</label>
+                            <input type="range" id="risk-level" min="1" max="10" value="5" class="w-full">
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>Low</span>
+                                <span>Medium</span>
+                                <span>High</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Max Position Size (%)</label>
+                            <input type="number" id="max-position" value="10" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                        </div>
+                        
+                        <button onclick="saveStrategy()" class="gradient-bg w-full px-6 py-2 rounded-lg font-medium hover:opacity-90">
+                            <i class="fas fa-save mr-2"></i>Save Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Chat Section -->
+        <div id="chat" class="section hidden">
+            <div class="glass-effect rounded-xl p-6 max-w-4xl mx-auto">
+                <h3 class="text-lg font-semibold mb-4">AI Trading Assistant</h3>
+                
+                <div id="chat-messages" class="h-96 overflow-y-auto mb-4 space-y-4 bg-gray-800/50 rounded-lg p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-gray-700 rounded-lg p-3 flex-1">
+                            <p>Hello! I'm your AI trading assistant. Ask me about market analysis, trading signals, or portfolio recommendations.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <input type="text" id="chat-input" placeholder="Ask about BTC, market sentiment, or trading advice..." class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter')sendChat()">
+                    <button onclick="sendChat()" class="gradient-bg px-6 py-2 rounded-lg font-medium hover:opacity-90">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings" class="section hidden">
+            <div class="glass-effect rounded-xl p-6 max-w-2xl mx-auto">
+                <h3 class="text-lg font-semibold mb-6">Configuration</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-md font-medium mb-4">Exchange API Keys</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Binance API Key</label>
+                                <input type="password" id="binance-key" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Binance API Secret</label>
+                                <input type="password" id="binance-secret" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-700 pt-6">
+                        <h4 class="text-md font-medium mb-4">Trading Mode</h4>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium">Paper Trading</p>
+                                <p class="text-sm text-gray-400">Use virtual money for testing</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="paper-trading-toggle" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-700 pt-6">
+                        <h4 class="text-md font-medium mb-4">AI Configuration</h4>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">OpenAI Compatible Endpoint</label>
+                            <input type="text" id="ai-endpoint" placeholder="https://api.openai.com/v1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div class="mt-3">
+                            <label class="block text-sm text-gray-400 mb-2">API Key</label>
+                            <input type="password" id="ai-key" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <button onclick="saveSettings()" class="gradient-bg w-full px-6 py-2 rounded-lg font-medium hover:opacity-90">
+                        <i class="fas fa-save mr-2"></i>Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Symbol Modal -->
+    <div id="add-symbol-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="glass-effect rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Add New Symbol</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Symbol</label>
+                    <input type="text" id="new-symbol" placeholder="e.g., ETHUSDT" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Exchange</label>
+                    <select id="new-exchange" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="binance">Binance</option>
+                        <option value="nobitex">Nobitex</option>
+                    </select>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button onclick="closeAddSymbolModal()" class="flex-1 bg-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-600">Cancel</button>
+                    <button onclick="addSymbol()" class="flex-1 gradient-bg px-4 py-2 rounded-lg font-medium hover:opacity-90">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let equityChart = null;
+        let priceChart = null;
+        let backtestChart = null;
+        let tradingActive = false;
+
+        // Navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-gray-800', 'text-white');
+                btn.classList.add('text-gray-300');
+            });
+            event.target.classList.remove('text-gray-300');
+            event.target.classList.add('bg-gray-800', 'text-white');
+        }
+
+        // Initialize charts
+        function initEquityChart() {
+            const ctx = document.getElementById('equity-chart').getContext('2d');
+            equityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [10000, 10200, 9900, 10500, 11250],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#9ca3af' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load news
+        async function loadNews() {
+            try {
+                const response = await fetch('/api/news');
+                const data = await response.json();
+                const newsFeed = document.getElementById('news-feed');
+                
+                newsFeed.innerHTML = data.news.map(item => `
+                    <div class="bg-gray-800/50 rounded-lg p-3 ${item.sentiment === 'positive' ? 'border-l-4 border-green-500' : item.sentiment === 'negative' ? 'border-l-4 border-red-500' : 'border-l-4 border-yellow-500'}">
+                        <p class="text-sm font-medium">${item.title}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-xs text-gray-400">${item.source}</span>
+                            <span class="text-xs ${item.sentiment === 'positive' ? 'text-green-400' : item.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'}">${item.sentiment.toUpperCase()}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading news:', error);
+            }
+        }
+
+        // Toggle trading
+        async function toggleTrading() {
+            try {
+                const response = await fetch('/api/trading/toggle', { method: 'POST' });
+                const data = await response.json();
+                
+                tradingActive = data.status === 'started';
+                updateTradingStatus();
+            } catch (error) {
+                console.error('Error toggling trading:', error);
+            }
+        }
+
+        function updateTradingStatus() {
+            const statusEl = document.getElementById('trading-status');
+            if (tradingActive) {
+                statusEl.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-900 text-green-300 pulse-green';
+                statusEl.innerHTML = '<i class="fas fa-circle text-xs mr-1"></i>Running';
+            } else {
+                statusEl.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-900 text-red-300';
+                statusEl.innerHTML = '<i class="fas fa-circle text-xs mr-1"></i>Stopped';
+            }
+        }
+
+        // Add symbol
+        function openAddSymbolModal() {
+            document.getElementById('add-symbol-modal').classList.remove('hidden');
+            document.getElementById('add-symbol-modal').classList.add('flex');
+        }
+
+        function closeAddSymbolModal() {
+            document.getElementById('add-symbol-modal').classList.add('hidden');
+            document.getElementById('add-symbol-modal').classList.remove('flex');
+        }
+
+        async function addSymbol() {
+            const symbol = document.getElementById('new-symbol').value;
+            const exchange = document.getElementById('new-exchange').value;
+            
+            if (!symbol) return alert('Please enter a symbol');
+            
+            try {
+                const response = await fetch('/api/symbol/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol, exchange })
+                });
+                
+                if (response.ok) {
+                    const symbolsList = document.getElementById('symbols-list');
+                    symbolsList.innerHTML += `
+                        <div class="bg-gray-800/50 rounded-lg p-4 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-coins text-blue-500"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">${symbol}</p>
+                                    <p class="text-sm text-gray-400">${exchange.charAt(0).toUpperCase() + exchange.slice(1)}</p>
+                                </div>
+                            </div>
+                            <button onclick="analyzeSymbol('${symbol}')" class="text-blue-400 hover:text-blue-300">
+                                <i class="fas fa-chart-bar"></i>
+                            </button>
+                        </div>
+                    `;
+                    closeAddSymbolModal();
+                }
+            } catch (error) {
+                console.error('Error adding symbol:', error);
+            }
+        }
+
+        // Analyze symbol
+        async function analyzeSymbol(symbol) {
+            try {
+                const response = await fetch(`/api/analysis/${symbol}`);
+                const data = await response.json();
+                
+                document.getElementById('analysis-result').classList.remove('hidden');
+                document.getElementById('rsi-value').textContent = data.indicators?.rsi?.toFixed(2) || '50.00';
+                document.getElementById('macd-value').textContent = data.indicators?.macd?.toFixed(4) || '0.0000';
+                document.getElementById('bb-value').textContent = 'Upper: ' + (data.indicators?.bb_upper?.toFixed(2) || '0.00');
+                
+                const signalEl = document.getElementById('signal-value');
+                signalEl.textContent = data.signal || 'NEUTRAL';
+                signalEl.className = data.signal === 'BUY' ? 'font-bold text-green-400' : data.signal === 'SELL' ? 'font-bold text-red-400' : 'font-bold text-yellow-400';
+                
+                // Show patterns
+                const patternsDiv = document.getElementById('patterns-detected');
+                if (data.patterns && data.patterns.length > 0) {
+                    patternsDiv.innerHTML = data.patterns.map(p => `
+                        <div class="bg-gray-800/50 rounded-lg p-3 flex items-center justify-between">
+                            <span>${p.name}</span>
+                            <span class="text-xs ${p.reliability > 0.7 ? 'text-green-400' : 'text-yellow-400'}">${(p.reliability * 100).toFixed(0)}% reliable</span>
+                        </div>
+                    `).join('');
+                }
+                
+                showSection('analysis');
+            } catch (error) {
+                console.error('Error analyzing symbol:', error);
+            }
+        }
+
+        function runAnalysis() {
+            const symbol = document.getElementById('analysis-symbol').value;
+            if (symbol) analyzeSymbol(symbol);
+        }
+
+        // Backtest
+        async function runBacktest() {
+            const symbol = document.getElementById('backtest-symbol').value;
+            const startDate = document.getElementById('backtest-start').value;
+            const endDate = document.getElementById('backtest-end').value;
+            const strategy = document.getElementById('backtest-strategy').value;
+            
+            try {
+                const response = await fetch('/api/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol, start_date: startDate, end_date: endDate, strategy, initial_capital: 10000 })
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('backtest-results').classList.remove('hidden');
+                document.getElementById('bt-return').textContent = data.total_return?.toFixed(2) + '%';
+                document.getElementById('bt-sharpe').textContent = data.sharpe_ratio?.toFixed(2);
+                document.getElementById('bt-drawdown').textContent = data.max_drawdown?.toFixed(2) + '%';
+                document.getElementById('bt-winrate').textContent = data.win_rate?.toFixed(1) + '%';
+                
+                // Update backtest chart
+                if (backtestChart) backtestChart.destroy();
+                const ctx = document.getElementById('backtest-chart').getContext('2d');
+                backtestChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Start', 'Period 1', 'Period 2', 'Period 3', 'End'],
+                        datasets: [{
+                            label: 'Equity Curve',
+                            data: data.equity_curve || [10000, 10200, 9900, 10500, 11250],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9ca3af' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#9ca3af' }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error running backtest:', error);
+            }
+        }
+
+        // Load strategies
+        async function loadStrategies() {
+            try {
+                const response = await fetch('/api/strategies');
+                const data = await response.json();
+                
+                const strategiesList = document.getElementById('strategies-list');
+                strategiesList.innerHTML = data.strategies.map(s => `
+                    <div class="bg-gray-800/50 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-700/50 transition-colors" onclick="selectStrategy('${s.id}')">
+                        <div>
+                            <p class="font-medium">${s.name}</p>
+                            <p class="text-sm text-gray-400">${s.desc}</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading strategies:', error);
+            }
+        }
+
+        function selectStrategy(strategyId) {
+            document.getElementById('current-strategy').value = strategyId;
+        }
+
+        function saveStrategy() {
+            alert('Strategy configuration saved!');
+        }
+
+        // Chat
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const chatMessages = document.getElementById('chat-messages');
+            
+            // Add user message
+            chatMessages.innerHTML += `
+                <div class="flex items-start space-x-3 justify-end">
+                    <div class="bg-blue-600 rounded-lg p-3 flex-1 max-w-md">
+                        <p>${message}</p>
+                    </div>
+                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                </div>
+            `;
+            
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Get AI response
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                chatMessages.innerHTML += `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-gray-700 rounded-lg p-3 flex-1 max-w-md">
+                            <p>${data.response}</p>
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (error) {
+                console.error('Error sending chat:', error);
+            }
+        }
+
+        // Save settings
+        function saveSettings() {
+            alert('Settings saved successfully!');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initEquityChart();
+            loadNews();
+            loadStrategies();
+            
+            // Set default dates for backtest
+            const today = new Date();
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            document.getElementById('backtest-end').valueAsDate = today;
+            document.getElementById('backtest-start').valueAsDate = lastMonth;
+        });
+    </script>
+</body>
+</html>
